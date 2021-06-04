@@ -101,6 +101,11 @@ class OembedField extends Field
     }
 
     /**
+     * @var null|mixed
+     */
+    private $_value;
+
+    /**
      * @param mixed                 $value   The raw field value
      * @param ElementInterface|null $element The element the field is associated with, if there is one
      *
@@ -108,6 +113,12 @@ class OembedField extends Field
      */
     public function normalizeValue($value, ElementInterface $element = null)
     {
+
+        if ($this->_value !== null) {
+            return $this->_value;
+        }
+        $this->_value = null;
+
         // If null, don’t proceed
         if ($value === null) {
             return null;
@@ -115,27 +126,28 @@ class OembedField extends Field
         
         // If an instance of `OembedModel` and URL is set, return it
         if ($value instanceof OembedModel && $value->url) {
-            return $value;
+            $this->_value = $value;
         }
 
         // If JSON object string, decode it and use that as the value
         if (Json::isJsonObject($value)) {
             $value = Json::decode($value); // Returns an array
+            $this->_value = $value;
         }
 
         // If array with `url` attribute, that’s our url so update the value
         while(is_array($value)) {
             $value = ArrayHelper::getValue($value, 'url');
+            $this->_value = $value;
         }
         
         
         // If URL string, return an instance of `OembedModel`
         if (is_string($value) && UrlHelper::isFullUrl($value)) {
-            return new OembedModel($value);
+            $this->_value = new OembedModel($value);
         }
         
-        // If we get here, something’s gone wrong
-        return null;
+        return $this->_value;
     }
 
     /**
